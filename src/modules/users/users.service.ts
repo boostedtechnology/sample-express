@@ -11,5 +11,7 @@ export const createUser = async (user: ICreateUser): Promise<ICreateUserResultSc
     throw new Error('Sending random error');
   }
 
+  console.log(user);
+
   return { result: true };
 };
