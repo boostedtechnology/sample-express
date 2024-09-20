@@ -1,12 +1,12 @@
 import 'zone.js';
 
 import { Logging as GCPCloudLogging } from '@google-cloud/logging';
+import { trace } from '@opentelemetry/api';
 
 import { isLocalEnv } from '../../common/utils';
 import { ILogDetails } from '../types';
 
 const getGCPProjectId = (): string => Zone.current.get('gcpProjectId');
-const getGCPTraceId = (): string => Zone.current.get('gcpTraceId');
 const getRequestMethod = (): string => Zone.current.get('requestMethod');
 const getRequestUrl = (): string => Zone.current.get('requestUrl');
 
@@ -17,14 +17,18 @@ function logToCloud(type: 'log' | 'warn' | 'error' | 'info', logDetails: ILogDet
 
   const gcpLogger = gcpLogClass.logSync(logDetails.appName);
 
+  const traceId = trace.getActiveSpan()?.spanContext().traceId;
+  const spanId = trace.getActiveSpan()?.spanContext().spanId;
+
   const metaData = {
     severity: type.toUpperCase(),
     httpRequest: {
       requestMethod: getRequestMethod(),
       requestUrl: getRequestUrl(),
     },
+    spanId,
     stack_trace: logDetails?.stackTrace,
-    trace: `projects/${getGCPProjectId()}/traces/${getGCPTraceId()}`,
+    trace: `projects/${getGCPProjectId()}/traces/${traceId}`,
   };
 
   if (!logDetails.additionalInfo) logDetails.additionalInfo = {};
